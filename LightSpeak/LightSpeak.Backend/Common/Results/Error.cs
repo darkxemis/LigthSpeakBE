@@ -31,6 +31,12 @@ public sealed record Error(
     public static Error EmailAlreadyExists() =>
         new(HttpStatusCode.Conflict, ErrorTags.User.EmailAlreadyExists, "An account with this email already exists.");
 
+    public static Error UserNotFound() =>
+        new(HttpStatusCode.NotFound, ErrorTags.User.NotFound, "The requested user was not found.");
+
+    public static Error InvalidImageFile() =>
+        new(HttpStatusCode.BadRequest, ErrorTags.User.InvalidImageFile, "Only jpg, jpeg, png, gif or webp images are allowed.");
+
     public static Error Validation(Dictionary<string, string> errors) =>
         new(HttpStatusCode.BadRequest, ErrorTags.Validation.Failed, "One or more validation errors occurred.", errors);
 }

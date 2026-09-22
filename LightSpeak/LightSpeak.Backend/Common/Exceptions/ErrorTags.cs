@@ -13,6 +13,7 @@ public static class ErrorTags
     {
         public const string NotFound = "user.notFound";
         public const string EmailAlreadyExists = "user.emailAlreadyExists";
+        public const string InvalidImageFile = "user.invalidImageFile";
     }
 
     public static class Server

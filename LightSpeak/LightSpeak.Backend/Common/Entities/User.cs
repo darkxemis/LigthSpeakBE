@@ -8,6 +8,7 @@ public sealed class User : Entity
     public string LastName { get; private set; } = default!;
     public int FailedLoginAttempts { get; private set; }
     public DateTime? LockoutEnd { get; private set; }
+    public string? ProfileImageUrl { get; private set; }
 
     public ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
 
@@ -45,4 +46,10 @@ public sealed class User : Entity
     }
 
     public bool IsLockedOut() => LockoutEnd is { } end && end > DateTime.UtcNow;
+
+    public void SetProfileImage(string? url)
+    {
+        ProfileImageUrl = url;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

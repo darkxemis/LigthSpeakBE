@@ -1,8 +1,11 @@
 using LightSpeak.Backend;
 using LightSpeak.Backend.Features.Auth;
+using LightSpeak.Backend.Features.Users;
 using LightSpeak.Backend.Infrastructure;
 using LightSpeak.Backend.Infrastructure.Persistence;
+using LightSpeak.Backend.Infrastructure.Services.FileStorage;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -59,10 +62,25 @@ app.UseExceptionHandler();
 app.UseCors("Frontend");
 app.UseHttpsRedirection();
 
+// Serve uploaded profile images as static files
+var fileStorageSettings = builder.Configuration
+    .GetSection(FileStorageSettings.SectionName)
+    .Get<FileStorageSettings>() ?? new FileStorageSettings();
+
+var profileImagesPath = Path.GetFullPath(fileStorageSettings.ProfileImagesPath);
+Directory.CreateDirectory(profileImagesPath);
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(profileImagesPath),
+    RequestPath = "/profile-images"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapUsersEndpoints();
 
 // Automatically apply pending EF Core migrations at startup and seed dev data.
 using (var scope = app.Services.CreateScope())

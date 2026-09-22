@@ -4,6 +4,8 @@ using System.Text;
 using LightSpeak.Backend.Common.Interfaces;
 using LightSpeak.Backend.Infrastructure.Authentication;
 using LightSpeak.Backend.Infrastructure.Persistence;
+using LightSpeak.Backend.Infrastructure.Services;
+using LightSpeak.Backend.Infrastructure.Services.FileStorage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,8 +18,18 @@ public static class DependencyInjection
     {
         services.AddPersistence(configuration);
         services.AddAuth(configuration);
+        services.AddServices(configuration);
 
         return services;
+    }
+
+    private static void AddServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.Configure<FileStorageSettings>(configuration.GetSection(FileStorageSettings.SectionName));
+        services.AddSingleton<IFileStorageService, LocalFileStorageService>();
     }
 
     private static void AddPersistence(this IServiceCollection services, IConfiguration configuration)
