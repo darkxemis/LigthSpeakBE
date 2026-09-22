@@ -22,6 +22,12 @@ public sealed record Error(
                 ["unlockAtUtc"] = lockoutEnd?.ToString("o") ?? string.Empty
             });
 
+    public static Error InvalidRefreshToken() =>
+        new(HttpStatusCode.Unauthorized, ErrorTags.Auth.InvalidRefreshToken, "Invalid refresh token.");
+
+    public static Error InvalidRefreshTokenInactive() =>
+        new(HttpStatusCode.Unauthorized, ErrorTags.Auth.InvalidRefreshToken, "Refresh token is expired or revoked.");
+
     public static Error EmailAlreadyExists() =>
         new(HttpStatusCode.Conflict, ErrorTags.User.EmailAlreadyExists, "An account with this email already exists.");
 

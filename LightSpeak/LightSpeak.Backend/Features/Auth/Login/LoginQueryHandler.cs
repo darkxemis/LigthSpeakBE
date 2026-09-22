@@ -55,6 +55,7 @@ public sealed class LoginQueryHandler(
             user.Email,
             $"{user.FirstName} {user.LastName}",
             accessToken,
-            refreshToken.Token));
+            refreshToken.Token,
+            DateTime.UtcNow.AddMinutes(jwtSettingsProvider.ExpirationInMinutes)));
     }
 }

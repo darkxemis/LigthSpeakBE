@@ -9,5 +9,7 @@ public sealed class JwtSettingsProvider(
 {
     private readonly JwtSettings _jwtSettings = options.Value;
 
+    public int ExpirationInMinutes => _jwtSettings.ExpirationInMinutes;
+
     public int RefreshTokenExpirationInDays => _jwtSettings.RefreshTokenExpirationInDays;
 }

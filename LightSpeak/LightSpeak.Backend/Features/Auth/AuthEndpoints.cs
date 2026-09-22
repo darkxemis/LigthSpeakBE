@@ -3,6 +3,7 @@ namespace LightSpeak.Backend.Features.Auth;
 using LightSpeak.Backend.Common.Results;
 using LightSpeak.Backend.Features.Auth.DTOs;
 using LightSpeak.Backend.Features.Auth.Login;
+using LightSpeak.Backend.Features.Auth.Refresh;
 using LightSpeak.Backend.Features.Auth.Register;
 using LightSpeak.Backend.Infrastructure.Middleware;
 using MediatR;
@@ -61,6 +62,48 @@ public static class AuthEndpoints
                 "Cookies are set by default for web clients. " +
                 "Mobile clients should add header 'X-Skip-Cookies: true'.");
 
+        group.MapPost("/refresh",
+            async (
+                ISender sender,
+                HttpContext http,
+                CancellationToken cancellationToken) =>
+            {
+                var refreshToken = GetRefreshToken(http);
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var result = await sender.Send(new RefreshTokenCommand(refreshToken), cancellationToken);
+                return ToHttpResult(http, result, auth =>
+                {
+                    if (!ShouldSkipCookies(http))
+                    {
+                        SetAuthCookies(http, auth.AccessToken, auth.RefreshToken);
+                    }
+
+                    return Results.Ok(auth);
+                });
+            })
+            .Produces<AuthResponse>(StatusCodes.Status200OK)
+            .Produces<ApiErrorResponse>(StatusCodes.Status401Unauthorized)
+            .WithName("Refresh")
+            .WithSummary("POST /api/v1/auth/refresh")
+            .WithDescription(
+                "Refreshes tokens. Reads refresh token from cookie or 'X-Refresh-Token' header. " +
+                "Cookies updated by default. Mobile clients should add 'X-Skip-Cookies: true'.");
+
+        group.MapPost("/logout",
+            (HttpContext http) =>
+            {
+                ClearAuthCookies(http);
+                return Results.NoContent();
+            })
+            .Produces(StatusCodes.Status204NoContent)
+            .WithName("Logout")
+            .WithSummary("POST /api/v1/auth/logout")
+            .WithDescription("Clears authentication cookies. Mobile clients discard tokens locally.");
+
         return endpoints;
     }
 
@@ -98,6 +141,28 @@ public static class AuthEndpoints
             CreateCookieOptions(DateTimeOffset.UtcNow.AddMinutes(accessMinutes)));
         http.Response.Cookies.Append("refreshToken", refreshToken,
             CreateCookieOptions(DateTimeOffset.UtcNow.AddDays(refreshDays)));
+    }
+
+    private static string? GetRefreshToken(HttpContext http)
+    {
+        if (http.Request.Cookies.TryGetValue("refreshToken", out var cookieToken))
+        {
+            return cookieToken;
+        }
+
+        if (http.Request.Headers.TryGetValue("X-Refresh-Token", out var headerToken))
+        {
+            return headerToken.ToString();
+        }
+
+        return null;
+    }
+
+    private static void ClearAuthCookies(HttpContext http)
+    {
+        var expiredOptions = CreateCookieOptions(DateTimeOffset.UtcNow.AddDays(-1));
+        http.Response.Cookies.Delete("accessToken", expiredOptions);
+        http.Response.Cookies.Delete("refreshToken", expiredOptions);
     }
 
     private static CookieOptions CreateCookieOptions(DateTimeOffset expires) => new()
