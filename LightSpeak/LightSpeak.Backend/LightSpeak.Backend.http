@@ -1,0 +1,24 @@
+@LightSpeak.Backend_HostAddress = http://localhost:5133
+
+POST {{LightSpeak.Backend_HostAddress}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@lightspeak.dev",
+  "password": "Pass123!secret",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+###
+
+POST {{LightSpeak.Backend_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+X-Skip-Cookies: true
+
+{
+  "email": "admin@lightspeak.dev",
+  "password": "Admin123!"
+}
+
+###

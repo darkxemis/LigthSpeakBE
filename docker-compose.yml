@@ -1,0 +1,50 @@
+services:
+  sqlserver:
+    container_name: lightspeak-sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - SA_PASSWORD=${SA_PASSWORD}
+      - ACCEPT_EULA=Y
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    ports:
+      - "1433:1433"
+    networks:
+      - lightspeak-net
+
+  lightspeakapi:
+    container_name: lightspeak-api
+    build:
+      context: ./LightSpeak/LightSpeak.Backend
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - AllowedHosts=${ALLOWED_HOSTS}
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - JwtSettings__ExpirationInMinutes=${JWT_EXPIRATION_IN_MINUTES}
+      - JwtSettings__RefreshTokenExpirationInDays=${JWT_REFRESH_TOKEN_EXPIRATION_IN_DAYS}
+      - LoginLockout__MaxFailedAttempts=${LOCKOUT_MAX_FAILED_ATTEMPTS}
+      - LoginLockout__LockoutMinutes=${LOCKOUT_MINUTES}
+      - Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_0}
+      - Logging__LogLevel__Default=${LOG_LEVEL_DEFAULT}
+      - Logging__LogLevel__Microsoft.AspNetCore=${LOG_LEVEL_ASPNETCORE}
+      - Serilog__MinimumLevel__Default=${SERILOG_MINIMUM_LEVEL}
+      - Serilog__MinimumLevel__Override__Microsoft.AspNetCore=${SERILOG_LEVEL_ASPNETCORE}
+      - Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore=${SERILOG_LEVEL_EF}
+    ports:
+      - "5000:80"
+    depends_on:
+      - sqlserver
+    networks:
+      - lightspeak-net
+
+networks:
+  lightspeak-net:
+    driver: bridge
+
+volumes:
+  sqlserver-data:
