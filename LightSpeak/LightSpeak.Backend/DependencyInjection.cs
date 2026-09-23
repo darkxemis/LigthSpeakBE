@@ -3,6 +3,7 @@ namespace LightSpeak.Backend;
 using FluentValidation;
 using LightSpeak.Backend.Common.Behaviors;
 using LightSpeak.Backend.Infrastructure.Middleware;
+using LightSpeak.Backend.Infrastructure.OpenApi;
 using Microsoft.OpenApi;
 
 public static class DependencyInjection
@@ -17,7 +18,9 @@ public static class DependencyInjection
                 {
                     Title = "LightSpeak API",
                     Version = "v1",
-                    Description = "Personal speak webside.",
+                    Description =
+                        "LightSpeak backend: auth, servers, channels, messages, " +
+                        "plus SignalR ChatHub and VoiceHub (see hub tags).",
                 };
 
                 document.Components ??= new OpenApiComponents();
@@ -29,6 +32,9 @@ public static class DependencyInjection
                     BearerFormat = "JWT",
                     Description = "Enter your JWT token",
                 };
+
+                document.AddSignalRHubsDocumentation();
+
                 return Task.CompletedTask;
             });
         });
