@@ -1,6 +1,6 @@
 namespace LightSpeak.Backend.Common.Interfaces;
 
-using LightSpeak.Backend.Common.Entities;
+using LightSpeak.Backend.Dominio;
 
 public interface IJwtTokenGenerator
 {

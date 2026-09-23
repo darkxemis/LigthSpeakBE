@@ -46,7 +46,7 @@ public sealed class UploadProfileImageCommandHandler(
         return Result<UserProfileResult>.Success(ToProfile(user));
     }
 
-    private static UserProfileResult ToProfile(Common.Entities.User user) =>
+    private static UserProfileResult ToProfile(LightSpeak.Backend.Dominio.User user) =>
         new(
             user.Id,
             user.Email,

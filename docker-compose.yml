@@ -36,6 +36,7 @@ services:
       - Serilog__MinimumLevel__Override__Microsoft.AspNetCore=${SERILOG_LEVEL_ASPNETCORE}
       - Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore=${SERILOG_LEVEL_EF}
       - FileStorage__ProfileImagesPath=${FILE_STORAGE_PROFILE_IMAGES_PATH}
+      - FileStorage__ServerIconsPath=${FILE_STORAGE_SERVER_ICONS_PATH}
       - FileStorage__BaseUrl=${FILE_STORAGE_BASE_URL}
     ports:
       - "5000:80"
@@ -43,6 +44,8 @@ services:
       - sqlserver
     volumes:
       - ./uploads/profile-images:/app/uploads/profile-images
+      - ./uploads/server-icons:/app/uploads/server-icons
+      - ./logs:/app/logs
     networks:
       - lightspeak-net
 

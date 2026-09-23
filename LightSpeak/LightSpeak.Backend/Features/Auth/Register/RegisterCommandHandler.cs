@@ -1,7 +1,7 @@
 namespace LightSpeak.Backend.Features.Auth.Register;
 
 using LightSpeak.Backend.Common.Constants;
-using LightSpeak.Backend.Common.Entities;
+using LightSpeak.Backend.Dominio;
 using LightSpeak.Backend.Common.Interfaces;
 using LightSpeak.Backend.Common.Results;
 using MediatR;

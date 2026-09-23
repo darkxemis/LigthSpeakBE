@@ -27,6 +27,8 @@ public static class DependencyInjection
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IServerMembershipService, ServerMembershipService>();
+        services.AddSingleton<IVoiceRoomRegistry, VoiceRoomRegistry>();
 
         services.Configure<FileStorageSettings>(configuration.GetSection(FileStorageSettings.SectionName));
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
@@ -76,6 +78,18 @@ public static class DependencyInjection
             {
                 OnMessageReceived = context =>
                 {
+                    var path = context.Request.Path;
+
+                    // SignalR: browsers cannot set headers on the WebSocket handshake,
+                    // so hubs may receive the JWT as 'access_token' on the querystring.
+                    if (path.StartsWithSegments("/hubs") &&
+                        context.Request.Query.TryGetValue("access_token", out var accessToken) &&
+                        !string.IsNullOrEmpty(accessToken))
+                    {
+                        context.Token = accessToken;
+                        return Task.CompletedTask;
+                    }
+
                     if (string.IsNullOrEmpty(context.Token) &&
                         context.Request.Cookies.TryGetValue("accessToken", out var cookieToken))
                     {

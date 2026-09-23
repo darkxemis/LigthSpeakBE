@@ -3,7 +3,7 @@ namespace LightSpeak.Backend.Infrastructure.Authentication;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using LightSpeak.Backend.Common.Entities;
+using LightSpeak.Backend.Dominio;
 using LightSpeak.Backend.Common.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

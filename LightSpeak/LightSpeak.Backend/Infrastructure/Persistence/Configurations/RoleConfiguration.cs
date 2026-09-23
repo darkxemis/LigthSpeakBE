@@ -1,6 +1,6 @@
 namespace LightSpeak.Backend.Infrastructure.Persistence.Configurations;
 
-using LightSpeak.Backend.Common.Entities;
+using LightSpeak.Backend.Dominio;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

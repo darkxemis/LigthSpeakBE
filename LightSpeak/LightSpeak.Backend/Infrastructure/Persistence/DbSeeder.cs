@@ -1,7 +1,7 @@
 namespace LightSpeak.Backend.Infrastructure.Persistence;
 
 using LightSpeak.Backend.Common.Constants;
-using LightSpeak.Backend.Common.Entities;
+using LightSpeak.Backend.Dominio;
 using LightSpeak.Backend.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 

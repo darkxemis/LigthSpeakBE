@@ -21,7 +21,7 @@ public static class UsersEndpoints
                 CancellationToken cancellationToken) =>
             {
                 var result = await sender.Send(new GetCurrentUserQuery(), cancellationToken);
-                return ToHttpResult(http, result, Results.Ok);
+                return result.ToHttpResult(http, Results.Ok);
             })
             .RequireAuthorization()
             .Produces<UserProfileResult>(StatusCodes.Status200OK)
@@ -42,7 +42,7 @@ public static class UsersEndpoints
                 var result = await sender.Send(
                     new UploadProfileImageCommand(stream, file.FileName),
                     cancellationToken);
-                return ToHttpResult(http, result, Results.Ok);
+                return result.ToHttpResult(http, Results.Ok);
             })
             .RequireAuthorization()
             .DisableAntiforgery()
@@ -60,7 +60,7 @@ public static class UsersEndpoints
                 CancellationToken cancellationToken) =>
             {
                 var result = await sender.Send(new DeleteProfileImageCommand(), cancellationToken);
-                return ToHttpResult(http, result, Results.Ok);
+                return result.ToHttpResult(http, Results.Ok);
             })
             .RequireAuthorization()
             .Produces<UserProfileResult>(StatusCodes.Status200OK)
@@ -71,22 +71,5 @@ public static class UsersEndpoints
             .WithDescription("Deletes the profile image of the currently authenticated user.");
 
         return endpoints;
-    }
-
-    private static IResult ToHttpResult<T>(
-        HttpContext http,
-        Result<T> result,
-        Func<T, IResult> onSuccess)
-    {
-        if (result.IsSuccess)
-        {
-            return onSuccess(result.Value!);
-        }
-
-        var error = result.Error!;
-
-        return Results.Json(
-            new ApiErrorResponse(error.Code, error.Message, http.TraceIdentifier, error.Metadata),
-            statusCode: (int)error.StatusCode);
     }
 }

@@ -1,6 +1,6 @@
 namespace LightSpeak.Backend.Features.Auth.Login;
 
-using LightSpeak.Backend.Common.Entities;
+using LightSpeak.Backend.Dominio;
 using LightSpeak.Backend.Common.Interfaces;
 using LightSpeak.Backend.Common.Results;
 using LightSpeak.Backend.Features.Auth.DTOs;

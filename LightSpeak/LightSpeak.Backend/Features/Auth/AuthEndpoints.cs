@@ -23,7 +23,7 @@ public static class AuthEndpoints
                 CancellationToken cancellationToken) =>
             {
                 var result = await sender.Send(command, cancellationToken);
-                return ToHttpResult(http, result,
+                return result.ToHttpResult(http,
                     userId => Results.Created($"/api/v1/auth/register/{userId}", new { userId }));
             })
             .Produces<Guid>(StatusCodes.Status201Created)
@@ -41,7 +41,7 @@ public static class AuthEndpoints
                 CancellationToken cancellationToken) =>
             {
                 var result = await sender.Send(query, cancellationToken);
-                return ToHttpResult(http, result, auth =>
+                return result.ToHttpResult(http, auth =>
                 {
                     if (!ShouldSkipCookies(http))
                     {
@@ -75,7 +75,7 @@ public static class AuthEndpoints
                 }
 
                 var result = await sender.Send(new RefreshTokenCommand(refreshToken), cancellationToken);
-                return ToHttpResult(http, result, auth =>
+                return result.ToHttpResult(http, auth =>
                 {
                     if (!ShouldSkipCookies(http))
                     {
@@ -105,23 +105,6 @@ public static class AuthEndpoints
             .WithDescription("Clears authentication cookies. Mobile clients discard tokens locally.");
 
         return endpoints;
-    }
-
-    private static IResult ToHttpResult<T>(
-        HttpContext http,
-        Result<T> result,
-        Func<T, IResult> onSuccess)
-    {
-        if (result.IsSuccess)
-        {
-            return onSuccess(result.Value!);
-        }
-
-        var error = result.Error!;
-
-        return Results.Json(
-            new ApiErrorResponse(error.Code, error.Message, http.TraceIdentifier, error.Metadata),
-            statusCode: (int)error.StatusCode);
     }
 
     private static bool ShouldSkipCookies(HttpContext http)

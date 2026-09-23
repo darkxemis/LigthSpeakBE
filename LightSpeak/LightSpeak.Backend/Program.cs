@@ -1,11 +1,14 @@
 using LightSpeak.Backend;
 using LightSpeak.Backend.Features.Auth;
+using LightSpeak.Backend.Features.Chat;
+using LightSpeak.Backend.Features.Channels;
+using LightSpeak.Backend.Features.Messages;
+using LightSpeak.Backend.Features.Servers;
 using LightSpeak.Backend.Features.Users;
+using LightSpeak.Backend.Features.Voice;
 using LightSpeak.Backend.Infrastructure;
 using LightSpeak.Backend.Infrastructure.Persistence;
-using LightSpeak.Backend.Infrastructure.Services.FileStorage;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -26,6 +29,9 @@ builder.Services.AddPresentation();
 
 // MediatR (CQRS) + FluentValidation pipeline
 builder.Services.AddApplication();
+
+// SignalR for real-time chat and voice signaling
+builder.Services.AddSignalR();
 
 // EF Core + JWT authentication
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -62,25 +68,19 @@ app.UseExceptionHandler();
 app.UseCors("Frontend");
 app.UseHttpsRedirection();
 
-// Serve uploaded profile images as static files
-var fileStorageSettings = builder.Configuration
-    .GetSection(FileStorageSettings.SectionName)
-    .Get<FileStorageSettings>() ?? new FileStorageSettings();
-
-var profileImagesPath = Path.GetFullPath(fileStorageSettings.ProfileImagesPath);
-Directory.CreateDirectory(profileImagesPath);
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(profileImagesPath),
-    RequestPath = "/profile-images"
-});
+app.UseUploadedStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapUsersEndpoints();
+app.MapServersEndpoints();
+app.MapServerMembersEndpoints();
+app.MapChannelsEndpoints();
+app.MapMessagesEndpoints();
+app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<VoiceHub>("/hubs/voice");
 
 // Automatically apply pending EF Core migrations at startup and seed dev data.
 using (var scope = app.Services.CreateScope())
