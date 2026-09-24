@@ -4,6 +4,7 @@ using LightSpeak.Backend.Features.Chat;
 using LightSpeak.Backend.Features.Channels;
 using LightSpeak.Backend.Features.Messages;
 using LightSpeak.Backend.Features.Servers;
+using LightSpeak.Backend.Features.Settings;
 using LightSpeak.Backend.Features.Users;
 using LightSpeak.Backend.Features.Voice;
 using LightSpeak.Backend.Infrastructure;
@@ -75,6 +76,7 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapUsersEndpoints();
+app.MapSettingsEndpoints();
 app.MapServersEndpoints();
 app.MapServerMembersEndpoints();
 app.MapChannelsEndpoints();

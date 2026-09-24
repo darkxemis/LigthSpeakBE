@@ -141,8 +141,8 @@ public static class SignalRHubsOpenApi
 
         | Event | Payload |
         | ----- | ------- |
-        | `ExistingPeers` | `[{ connectionId, userId, username }]` — peers already in the room when you join |
-        | `PeerJoined` | `{ connectionId, userId, username }` |
+        | `ExistingPeers` | `[{ connectionId, userId, username, profileImageUrl }]` — peers already in the room when you join |
+        | `PeerJoined` | `{ connectionId, userId, username, profileImageUrl }` |
         | `PeerLeft` | `connectionId: string` |
         | `ReceiveSignal` | `{ fromConnectionId, fromUserId, signalType, payload }` |
 

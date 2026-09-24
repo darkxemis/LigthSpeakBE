@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<ServerMember> ServerMembers { get; }
     DbSet<Channel> Channels { get; }
     DbSet<Message> Messages { get; }
+    DbSet<UserSettings> UserSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

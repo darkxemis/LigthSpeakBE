@@ -36,13 +36,33 @@ public static class VoiceEndpoints
                         .Select(c => c.Id)
                         .ToListAsync(cancellationToken);
 
-                    var result = voiceChannelIds
-                        .Select(channelId => new VoiceChannelParticipants(
-                            channelId,
-                            rooms.GetChannelPeers(channelId)
+                    var channelPeers = voiceChannelIds
+                        .Select(channelId => (ChannelId: channelId, Peers: rooms.GetChannelPeers(channelId).ToList()))
+                        .ToList();
+
+                    var userIds = channelPeers
+                        .SelectMany(c => c.Peers)
+                        .Select(p => p.UserId)
+                        .Distinct()
+                        .ToList();
+
+                    var profileImages = new Dictionary<Guid, string?>();
+                    if (userIds.Count > 0)
+                    {
+                        profileImages = await db.Users
+                            .AsNoTracking()
+                            .Where(u => userIds.Contains(u.Id))
+                            .ToDictionaryAsync(u => u.Id, u => u.ProfileImageUrl, cancellationToken);
+                    }
+
+                    var result = channelPeers
+                        .Select(c => new VoiceChannelParticipants(
+                            c.ChannelId,
+                            c.Peers
                                 .Select(p => new VoiceParticipant(
                                     p.UserId,
                                     p.Username,
+                                    profileImages.GetValueOrDefault(p.UserId),
                                     p.IsMuted,
                                     p.IsSpeaking,
                                     p.IsDeafened))
@@ -68,6 +88,7 @@ public static class VoiceEndpoints
 public sealed record VoiceParticipant(
     Guid UserId,
     string Username,
+    string? ProfileImageUrl,
     bool IsMuted,
     bool IsSpeaking,
     bool IsDeafened);

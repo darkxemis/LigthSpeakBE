@@ -27,6 +27,12 @@ public sealed class VoiceHub(
 
         var existingPeers = rooms.Join(channelId, Context.ConnectionId, GetUserId(), GetUsername());
 
+        var userIds = existingPeers.Select(p => p.UserId).Append(GetUserId()).Distinct().ToList();
+        var profileImages = await db.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.ProfileImageUrl);
+
         await Groups.AddToGroupAsync(Context.ConnectionId, VoiceGroup(channelId));
 
         await Clients.Caller.SendAsync(
@@ -36,6 +42,7 @@ public sealed class VoiceHub(
                 p.ConnectionId,
                 p.UserId,
                 p.Username,
+                ProfileImageUrl = profileImages.GetValueOrDefault(p.UserId),
                 p.IsMuted,
                 p.IsSpeaking,
                 p.IsDeafened
@@ -47,6 +54,7 @@ public sealed class VoiceHub(
                 ConnectionId = Context.ConnectionId,
                 UserId = GetUserId(),
                 Username = GetUsername(),
+                ProfileImageUrl = profileImages.GetValueOrDefault(GetUserId()),
                 IsMuted = false,
                 IsSpeaking = false,
                 IsDeafened = false
