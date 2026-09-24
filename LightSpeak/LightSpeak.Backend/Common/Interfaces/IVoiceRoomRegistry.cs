@@ -2,7 +2,13 @@ namespace LightSpeak.Backend.Common.Interfaces;
 
 using LightSpeak.Backend.Dominio;
 
-public sealed record VoicePeer(string ConnectionId, Guid UserId, string Username);
+public sealed record VoicePeer(
+    string ConnectionId,
+    Guid UserId,
+    string Username,
+    bool IsMuted = false,
+    bool IsSpeaking = false,
+    bool IsDeafened = false);
 
 public interface IVoiceRoomRegistry
 {
@@ -13,4 +19,10 @@ public interface IVoiceRoomRegistry
     void RemoveConnection(string connectionId);
 
     bool AreInSameRoom(string sourceConnectionId, string targetConnectionId);
+
+    IReadOnlyList<VoicePeer> GetChannelPeers(Guid channelId);
+
+    IReadOnlyList<Guid> GetChannelsForConnection(string connectionId);
+
+    void UpdateVoiceState(string connectionId, bool isSpeaking, bool isMuted, bool isDeafened);
 }

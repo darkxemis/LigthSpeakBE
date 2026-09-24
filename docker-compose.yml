@@ -30,6 +30,7 @@ services:
       - LoginLockout__MaxFailedAttempts=${LOCKOUT_MAX_FAILED_ATTEMPTS}
       - LoginLockout__LockoutMinutes=${LOCKOUT_MINUTES}
       - Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_0}
+      - Cors__AllowedOrigins__1=${CORS_ALLOWED_ORIGIN_1}
       - Logging__LogLevel__Default=${LOG_LEVEL_DEFAULT}
       - Logging__LogLevel__Microsoft.AspNetCore=${LOG_LEVEL_ASPNETCORE}
       - Serilog__MinimumLevel__Default=${SERILOG_MINIMUM_LEVEL}

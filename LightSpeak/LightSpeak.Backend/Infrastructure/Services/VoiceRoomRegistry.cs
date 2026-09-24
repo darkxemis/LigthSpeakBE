@@ -80,4 +80,47 @@ public sealed class VoiceRoomRegistry : IVoiceRoomRegistry
                 room.ContainsKey(targetConnectionId));
         }
     }
+
+    public IReadOnlyList<VoicePeer> GetChannelPeers(Guid channelId)
+    {
+        lock (_lock)
+        {
+            if (!_rooms.TryGetValue(channelId, out var room))
+            {
+                return [];
+            }
+
+            return room.Values.ToList();
+        }
+    }
+
+    public IReadOnlyList<Guid> GetChannelsForConnection(string connectionId)
+    {
+        lock (_lock)
+        {
+            return _rooms
+                .Where(kv => kv.Value.ContainsKey(connectionId))
+                .Select(kv => kv.Key)
+                .ToList();
+        }
+    }
+
+    public void UpdateVoiceState(string connectionId, bool isSpeaking, bool isMuted, bool isDeafened)
+    {
+        lock (_lock)
+        {
+            foreach (var room in _rooms.Values)
+            {
+                if (room.TryGetValue(connectionId, out var peer))
+                {
+                    room[connectionId] = peer with
+                    {
+                        IsSpeaking = isSpeaking,
+                        IsMuted = isMuted,
+                        IsDeafened = isDeafened
+                    };
+                }
+            }
+        }
+    }
 }

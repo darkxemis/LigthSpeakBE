@@ -79,6 +79,7 @@ app.MapServersEndpoints();
 app.MapServerMembersEndpoints();
 app.MapChannelsEndpoints();
 app.MapMessagesEndpoints();
+app.MapVoiceEndpoints();
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<VoiceHub>("/hubs/voice");
 

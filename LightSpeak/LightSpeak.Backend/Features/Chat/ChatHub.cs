@@ -29,6 +29,21 @@ public sealed class ChatHub(
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, ChannelGroup(channelId));
     }
 
+    public async Task JoinServerGroup(Guid serverId)
+    {
+        if (!await membership.IsMemberAsync(serverId, GetUserId()))
+        {
+            throw new HubException(Error.ServerNotMember().Message);
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, ServerGroup(serverId));
+    }
+
+    public Task LeaveServerGroup(Guid serverId)
+    {
+        return Groups.RemoveFromGroupAsync(Context.ConnectionId, ServerGroup(serverId));
+    }
+
     public async Task SendMessage(Guid channelId, string content)
     {
         var result = await sender.Send(new SendMessageCommand(channelId, content));
@@ -67,4 +82,6 @@ public sealed class ChatHub(
     }
 
     private static string ChannelGroup(Guid channelId) => $"channel-{channelId}";
+
+    public static string ServerGroup(Guid serverId) => $"server-{serverId}";
 }

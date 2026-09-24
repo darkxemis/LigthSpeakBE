@@ -1,0 +1,75 @@
+namespace LightSpeak.Backend.Features.Voice;
+
+using LightSpeak.Backend.Common.Interfaces;
+using LightSpeak.Backend.Common.Results;
+using LightSpeak.Backend.Dominio;
+using LightSpeak.Backend.Infrastructure.Middleware;
+using Microsoft.EntityFrameworkCore;
+
+public static class VoiceEndpoints
+{
+    public static IEndpointRouteBuilder MapVoiceEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/v1/servers/{serverId:guid}/voice").WithTags("Voice");
+
+        group.MapGet(
+                "/participants",
+                async (
+                    Guid serverId,
+                    IServerMembershipService membership,
+                    IVoiceRoomRegistry rooms,
+                    IApplicationDbContext db,
+                    ICurrentUserService currentUser,
+                    HttpContext http,
+                    CancellationToken cancellationToken) =>
+                {
+                    if (!await membership.IsMemberAsync(serverId, currentUser.UserId, cancellationToken))
+                    {
+                        return Result<IReadOnlyList<VoiceChannelParticipants>>
+                            .Failure(Error.ServerNotMember())
+                            .ToHttpResult(http, Results.Ok);
+                    }
+
+                    var voiceChannelIds = await db.Channels
+                        .AsNoTracking()
+                        .Where(c => c.ServerId == serverId && c.Type == ChannelType.Voice)
+                        .Select(c => c.Id)
+                        .ToListAsync(cancellationToken);
+
+                    var result = voiceChannelIds
+                        .Select(channelId => new VoiceChannelParticipants(
+                            channelId,
+                            rooms.GetChannelPeers(channelId)
+                                .Select(p => new VoiceParticipant(
+                                    p.UserId,
+                                    p.Username,
+                                    p.IsMuted,
+                                    p.IsSpeaking,
+                                    p.IsDeafened))
+                                .ToList()))
+                        .ToList();
+
+                    return Result<IReadOnlyList<VoiceChannelParticipants>>
+                        .Success(result)
+                        .ToHttpResult(http, Results.Ok);
+                })
+            .RequireAuthorization()
+            .Produces<IReadOnlyList<VoiceChannelParticipants>>(StatusCodes.Status200OK)
+            .Produces<ApiErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
+            .WithName("GetVoiceParticipants")
+            .WithSummary("GET /api/v1/servers/{serverId}/voice/participants")
+            .WithDescription("Returns who is currently connected to each voice channel of a server.");
+
+        return endpoints;
+    }
+}
+
+public sealed record VoiceParticipant(
+    Guid UserId,
+    string Username,
+    bool IsMuted,
+    bool IsSpeaking,
+    bool IsDeafened);
+
+public sealed record VoiceChannelParticipants(Guid ChannelId, IReadOnlyList<VoiceParticipant> Participants);

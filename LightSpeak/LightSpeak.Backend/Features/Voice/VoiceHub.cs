@@ -3,15 +3,19 @@ namespace LightSpeak.Backend.Features.Voice;
 using System.Security.Claims;
 using LightSpeak.Backend.Common.Interfaces;
 using LightSpeak.Backend.Common.Results;
+using LightSpeak.Backend.Features.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 // Signaling only: relays WebRTC offers/answers/ICE candidates between peers in
 // the same voice channel. Audio/video/screen-share travels P2P between clients.
 [Authorize]
 public sealed class VoiceHub(
     IServerMembershipService membership,
-    IVoiceRoomRegistry rooms
+    IVoiceRoomRegistry rooms,
+    IApplicationDbContext db,
+    IHubContext<ChatHub> chatHub
 ) : Hub
 {
     public async Task JoinVoiceChannel(Guid channelId)
@@ -25,15 +29,30 @@ public sealed class VoiceHub(
 
         await Groups.AddToGroupAsync(Context.ConnectionId, VoiceGroup(channelId));
 
-        await Clients.Caller.SendAsync("ExistingPeers", existingPeers);
+        await Clients.Caller.SendAsync(
+            "ExistingPeers",
+            existingPeers.Select(p => new
+            {
+                p.ConnectionId,
+                p.UserId,
+                p.Username,
+                p.IsMuted,
+                p.IsSpeaking,
+                p.IsDeafened
+            }).ToList());
 
         await Clients.OthersInGroup(VoiceGroup(channelId))
             .SendAsync("PeerJoined", new
             {
                 ConnectionId = Context.ConnectionId,
                 UserId = GetUserId(),
-                Username = GetUsername()
+                Username = GetUsername(),
+                IsMuted = false,
+                IsSpeaking = false,
+                IsDeafened = false
             });
+
+        await NotifyVoiceRosterAsync(channelId);
     }
 
     public async Task LeaveVoiceChannel(Guid channelId)
@@ -44,6 +63,34 @@ public sealed class VoiceHub(
 
         await Clients.OthersInGroup(VoiceGroup(channelId))
             .SendAsync("PeerLeft", Context.ConnectionId);
+
+        await NotifyVoiceRosterAsync(channelId);
+    }
+
+    public async Task UpdateVoiceState(bool isSpeaking, bool isMuted, bool isDeafened)
+    {
+        var channelIds = rooms.GetChannelsForConnection(Context.ConnectionId);
+        if (channelIds.Count == 0)
+        {
+            return;
+        }
+
+        rooms.UpdateVoiceState(Context.ConnectionId, isSpeaking, isMuted, isDeafened);
+
+        var payload = new
+        {
+            ConnectionId = Context.ConnectionId,
+            UserId = GetUserId(),
+            IsSpeaking = isSpeaking,
+            IsMuted = isMuted,
+            IsDeafened = isDeafened
+        };
+
+        foreach (var channelId in channelIds)
+        {
+            await Clients.Group(VoiceGroup(channelId)).SendAsync("PeerState", payload);
+            await NotifyVoiceStateAsync(channelId, isSpeaking, isMuted, isDeafened);
+        }
     }
 
     // signalType: "offer" | "answer" | "ice-candidate"
@@ -63,10 +110,52 @@ public sealed class VoiceHub(
         });
     }
 
-    public override Task OnDisconnectedAsync(Exception? exception)
+    public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        var channelIds = rooms.GetChannelsForConnection(Context.ConnectionId);
         rooms.RemoveConnection(Context.ConnectionId);
-        return base.OnDisconnectedAsync(exception);
+
+        foreach (var channelId in channelIds)
+        {
+            await Clients.OthersInGroup(VoiceGroup(channelId))
+                .SendAsync("PeerLeft", Context.ConnectionId);
+            await NotifyVoiceRosterAsync(channelId);
+        }
+
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    private async Task NotifyVoiceRosterAsync(Guid channelId)
+    {
+        var serverId = await ResolveServerIdAsync(channelId);
+        if (serverId == Guid.Empty)
+        {
+            return;
+        }
+
+        await chatHub.Clients.Group(ChatHub.ServerGroup(serverId))
+            .SendAsync("VoiceRosterUpdated", serverId, channelId);
+    }
+
+    private async Task NotifyVoiceStateAsync(Guid channelId, bool isSpeaking, bool isMuted, bool isDeafened)
+    {
+        var serverId = await ResolveServerIdAsync(channelId);
+        if (serverId == Guid.Empty)
+        {
+            return;
+        }
+
+        await chatHub.Clients.Group(ChatHub.ServerGroup(serverId))
+            .SendAsync("VoiceUserState", serverId, channelId, GetUserId(), isSpeaking, isMuted, isDeafened);
+    }
+
+    private async Task<Guid> ResolveServerIdAsync(Guid channelId)
+    {
+        return await db.Channels
+            .AsNoTracking()
+            .Where(c => c.Id == channelId)
+            .Select(c => c.ServerId)
+            .FirstOrDefaultAsync();
     }
 
     private Guid GetUserId()
